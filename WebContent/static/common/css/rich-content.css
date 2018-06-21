@@ -1,0 +1,5 @@
+.note-editor .note-editable {
+    padding: 20px 40px 150px 40px;
+    overflow: auto;
+    outline: 0		   
+}

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.comment.dao.NewsCommentDao">
+    
+	<sql id="commentColumns">
+		a.id AS "id",
+		a.create_date AS "createDate",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.parent_id AS "parentId",
+		a.comment AS "comment",
+		a.user_id AS "commentator.id",
+		user.login_name AS "commentator.name",
+		a.is_anon AS "isAnon",
+		a.parent_ids AS "parentIds",
+		a.news_id AS "news.id",
+		news.title AS "news.title",
+		a.nick_name as "nickName",
+		a.status AS "status"
+	</sql>
+	
+	<sql id="commentJoins">
+		LEFT JOIN sys_user user ON user.id = a.user_id
+		LEFT JOIN tb_article news ON news.id = a.news_id
+	</sql>
+	
+    
+	<select id="get" resultType="NewsComment" >
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_news_comment a
+		<include refid="commentJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	<!-- app查询评论分页 -->
+	<select id="appFindPage" resultType="NewsComment" >
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_news_comment a
+		<include refid="commentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="news != null">
+				AND a.news_id = #{news.id}
+			</if>
+			<if test="commentator != null">
+				AND a.user_id = #{commentator.id}
+			</if>
+			and a.status='1'
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="appFindList" resultType="NewsComment" >
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_news_comment a
+		<include refid="commentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="news != null">
+				AND a.news_id = #{news.id}
+			</if>
+			<if test="commentator != null">
+				AND a.user_id = #{commentator.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+		</choose>
+	</select>
+	
+	<select id="findList" resultType="NewsComment" >
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_news_comment a
+		<include refid="commentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="news != null">
+				AND a.news_id = #{news.id}
+			</if>
+			<if test="commentator != null">
+				AND a.user_id = #{commentator.id}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+		</choose>
+	</select>
+	
+	<select id="findListByNewsId" resultType="NewsComment" >
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_news_comment a
+		<include refid="commentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="news.id != null">
+				AND a.news_id = #{news.id}
+			</if>
+			<if test="commentator.id != null">
+				AND a.user_id = #{commentator.id}
+			</if>
+			and a.status = #{status}
+		</where>
+		<choose>
+			<otherwise>
+				ORDER BY a.create_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="NewsComment" >
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_news_comment a
+		<include refid="commentJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO tb_news_comment (
+			id,
+			create_date,
+			update_date,
+			remarks,
+			del_flag,
+			parent_id,
+			comment,
+			news_id,
+			user_id,
+			is_anon,
+			parent_ids,
+			nick_name,
+			status
+		) VALUES (
+			#{id},
+			#{createDate},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{parentId},
+			#{comment},
+			#{news.id},
+			#{commentator.id},
+			#{isAnon},
+			#{parentIds},
+			#{nickName},
+			#{status}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE tb_news_comment SET 	
+			update_date = #{updateDate},
+			status = #{status}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM tb_news_comment
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE tb_news_comment SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getCommentsCount" resultType="int">
+		SELECT count(a.id)
+		FROM tb_news_comment a
+		WHERE
+			a.news_id = #{newsId}
+	</select>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="NewsComment" statementType="STATEMENT">
+		select * FROM tb_news_comment  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.news.dao.NewsTypeDao">
+    
+	<sql id="newsTypeColumns">
+		a.id AS "id",
+		a.create_date AS "createDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.name AS "name",
+		a.sort AS "sort",
+		a.key  AS "key",
+		a.short_name as "shortName"
+	</sql>
+	
+	<sql id="newsTypeJoins">
+	</sql>
+	
+    
+	<select id="get" resultType="NewsType" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_type a
+		<include refid="newsTypeJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="NewsType" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_type a
+		<include refid="newsTypeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.name !='公告'
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- 发布文章是 -->
+	<select id="findListForArticle" resultType="NewsType" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_type a
+		<include refid="newsTypeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.key !='topLine'
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.sort
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="NewsType" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_type a
+		<include refid="newsTypeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO tb_news_type(
+			id,
+			create_date,
+			remarks,
+			del_flag,
+			name,
+			short_name,
+			key,
+			sort
+		) VALUES (
+			#{id},
+			#{createDate},
+			#{remarks},
+			#{delFlag},
+			#{name},
+			#{shortName},
+			#{key},
+			#{sort}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE tb_news_type SET 	
+			remarks = #{remarks},
+			name = #{name},
+			short_name = #{shortName},
+			key = #{key},
+			sort = #{sort}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM tb_news_type
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE tb_news_type SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="NewsType" statementType="STATEMENT">
+		select * FROM tb_news_type  where ${propertyName} = '${value}'
+	</select>
+	
+	<!-- app查询新闻类型 -->
+	<select id="findNewsType" resultType="NewsType" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_type a
+		<include refid="newsTypeJoins"/>
+		<where>
+			a.del_flag = '0'
+			and a.key !='notice'
+		</where>
+		<choose>
+			<otherwise>
+				ORDER BY a.sort
+			</otherwise>
+		</choose>
+	</select>
+	
+</mapper>

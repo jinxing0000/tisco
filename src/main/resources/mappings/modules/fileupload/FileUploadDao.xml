@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.fileupload.dao.FileUploadDao">
+    
+	<sql id="fileuploadColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.type AS "type",
+		a.path AS "path",
+		a.policyinfoid AS "policyinfoId",
+		a.tag as "tag",
+		a.sort as "sort"
+	</sql>
+	
+	<sql id="fileuploadJoins">
+	</sql>
+
+	<update id="updateFileLoad" parameterType="java.util.HashMap" >
+		UPDATE  fileupload
+		<set>
+		          POLICYINFOID=#{policyinfoId}
+		</set>
+		WHERE id IN 
+		<foreach item="ids" collection="listId" open="(" separator="," close=")">
+			#{ids}
+		</foreach>
+	</update>
+	
+		<update id="updateFileLoadBymap" parameterType="java.util.HashMap" >
+		UPDATE  fileupload
+		<set>
+		          POLICYINFOID=#{policyinfoId},tag = #{tag}
+		</set>
+		WHERE id =  #{id}   
+			
+	</update>
+	
+    
+	<select id="get" resultType="FileUpload" >
+		SELECT 
+			<include refid="fileuploadColumns"/>
+		FROM fileupload a
+		<include refid="fileuploadJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+<!-- 	<select id="check" resultType="FileUpload" >
+		SELECT 
+			<include refid="fileuploadColumns"/>
+		FROM fileupload a
+		<include refid="fileuploadJoins"/>
+		WHERE 
+			a.user_id = #{userId}
+			AND
+			a.item_id = #{itemId}
+	</select> -->
+	
+<!-- 	<select id="findList" resultType="FileUpload" >
+		SELECT 
+			<include refid="fileuploadColumns"/>
+		FROM fileupload a
+		<include refid="fileuploadJoins"/>
+		<where>
+			
+			<if test="module != null and module != ''">
+				AND a.module = #{module}
+			</if>
+			<if test="item != null and item != ''">
+				AND a.item LIKE 
+					<if test="dbName == 'oracle'">'%'||#{item}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{item}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{item},'%')</if>
+			</if>
+			<if test="collectorId != null and collectorId != ''">
+				AND a.user_id = #{collectorId}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	 -->
+	<select id="findAllList" resultType="FileUpload" >
+		SELECT 
+			<include refid="fileuploadColumns"/>
+		FROM fileupload a
+		<include refid="fileuploadJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO fileupload(
+			id,
+			name,
+			type,
+			path,
+			policyinfoid,
+			tag,
+			sort,
+			when_long
+		) VALUES (
+			#{id},
+			#{name},
+			#{type},
+			#{path},
+			#{policyinfoId},
+			#{tag},
+			#{sort},
+			#{whenLong}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE fileupload SET 	
+			name = #{name},
+			type = #{type},
+			path = #{path},
+			policyinfoid = #{policyinfoId},
+			tag = #{tag}
+		WHERE id = #{id}
+	</update>
+	<!-- 修改排序号 -->
+	<update id="updateForSort">
+		UPDATE fileupload SET 	
+			sort=#{sort}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM fileupload
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="FileUpload" statementType="STATEMENT">
+		select * FROM fileupload  where ${propertyName} = '${value}'
+	</select>
+	
+	
+	<select id="findFilesByFId" parameterType="String" resultType="FileUpload">
+			SELECT ID,NAME,TYPE,PATH,TAG FROM fileupload
+			where POLICYINFOID=#{policyinfoId}
+	</select>
+	<!-- 修改业务关联id -->
+	<update id="updatePolicyinfoid" parameterType="java.util.Map">
+      update fileupload
+        set 
+          policyinfoid=#{policyinfoid}
+        where 
+        <foreach collection="ids" item="item" index="index" open="(" separator=" or " close=")" > 
+          ID = #{item}
+        </foreach>
+  </update>
+  
+  <update id="updatePol" parameterType="java.util.Map">
+      update fileupload
+        set 
+          policyinfoid ='0'
+        where 
+          policyinfoid=#{policyinfoid};
+  </update>
+	
+</mapper>

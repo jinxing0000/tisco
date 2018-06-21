@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.news.dao.ArticleDao">
+    
+	<sql id="articleColumns">
+		a.id AS "id",
+		a.title AS "title",
+		a.type_id AS "type.id",
+		a.summary AS "summary",
+		a.content AS "content",
+		a.origin AS "origin",
+		a.issuer_id AS "issuer.id",
+		issuer.name AS "issuer.name",
+		date_format(a.create_date,'%Y-%m-%d') AS "createDate",
+		a.issued_date AS "issuedDate",
+		a.update_date AS "updateDate",
+		type.name AS "type.name",
+		a.content_type AS "contentType",
+		a.is_recommend AS "isRecommend",
+		a.status AS "status",
+		a.is_topline as "isTopline",
+		a.sort as "sort",
+		a.two_level as "twoLevel",
+		a.pic_id as "picId",
+		a.video_id  as "videoId",
+		a.audio_id as "audioId",
+		a.author as "author",
+		a.enable_comments_or_not as "enableCommentsOrNot",
+		a.is_push_msg as "isPushMsg",
+		a.topline_focus as "toplineFocus",
+		a.recommend_news as "recommendNews"
+	</sql>
+	
+	<sql id="listColumns">
+		a.id AS "id",
+		a.title AS "title",
+		a.type_id AS "type.key",
+		a.summary AS "summary",
+		a.origin AS "origin",
+		a.issuer_id AS "issuer.id",
+		issuer.name AS "issuer.name",
+		date_format(a.create_date,'%Y-%m-%d') AS "createDate",
+		a.issued_date,
+		a.update_date AS "updateDate",
+		type.name AS "type.name",
+		type.id as "type.id",
+		a.content_type AS "contentType",
+		a.is_recommend AS "isRecommend",
+		a.status AS "status",
+		a.is_topline as "isTopline",
+		a.sort as "sort",
+		a.two_level as "twoLevel",
+		a.pic_id as "picId",
+		a.video_id  as "videoId",
+		a.audio_id as "audioId",
+		a.author as "author",
+		a.enable_comments_or_not as "enableCommentsOrNot",
+		a.topline_focus as "toplineFocus",
+		a.is_push_msg as "isPushMsg",
+		a.recommend_news as "recommendNews",
+		(select count(1) from tb_likes likeCount where likeCount.news_id = a.id and likeCount.del_flag='0') as "countLike",
+		(select count(1) from tb_favorites favoritesCount where favoritesCount.news_id = a.id and favoritesCount.del_flag='0') as "countFavorites",
+		(select distinct(user.name) from tb_audit_comment comm LEFT JOIN sys_user user ON comm.auditor_id = user.id where comm.cms_id = a.id order by audited_time desc limit 1) as "auditComments.auditor.name"
+		<if test="issuer != null and issuer != '' ">
+		   ,(select d.id from tb_favorites d where d.news_id =a.id and d.del_flag='0' and d.user_id = #{issuer.id}) as "isFavorite"
+		   ,(select o.id from tb_likes o where o.news_id =a.id and o.del_flag='0' and o.user_id = #{issuer.id}) as "isLikes"
+		</if>
+	</sql>
+	
+	<resultMap id="articleRel" type="Article">
+		<id property="id" column="id" />
+		<result property="title" column="title" />
+		<result property="name" column="name" />
+		<result property="origin" column="origin" />
+		<result property="issuedDate" column="issued_date" javaType="java.sql.Date" jdbcType="DATE"/>
+		<result property="summary" column="summary" />
+		<result property="type.id" column="type_id" />
+		<result property="type.name" column="type.name" />
+		<result property="issuer.id" column="issuer_id" />
+		<result property="issuer.name" column="issuer.name" />
+		<result property="contentType" column="content_type"/>
+		<result property="isRecommend" column="is_recommend"/>
+		<result property="status" column="status"/>
+		<result property="toplineFocus" column="topline_focus"/>
+		<result property="recommendNews" column="recommend_news"/>
+		<result property="isLikes" column="isLikes"/>
+        <!-- 查询子模块 -->  
+        <collection property="fileUploads" ofType="FileUpload" 
+        	javaType="ArrayList" column="id" select="getFileUploads" />
+	</resultMap>
+	
+	<sql id="articleJoins">
+		LEFT JOIN sys_user issuer ON issuer.id = a.issuer_id
+		LEFT JOIN tb_news_type type ON type.key = a.type_id
+	</sql>
+	
+	<sql id="singleJoins">
+		LEFT JOIN sys_user issuer ON issuer.id = a.issuer_id
+		LEFT JOIN tb_news_type type ON type.key = a.type_id
+	</sql>
+	
+	<select id="getFileUploads" resultType="com.tisco.modules.fileupload.entity.FileUpload"
+		parameterType="String">
+		select b.id, b.path,b.sort as "sort",b.name,b.type,b.when_long from fileupload b where b.policyinfoid=#{id}  order by b.sort desc
+	</select>
+    
+	<select id="get" resultType="Article">
+		SELECT 
+			<include refid="articleColumns"/>
+		FROM tb_article a
+		<include refid="singleJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<!-- pc分页查询新闻 -->
+	<select id="findList" resultMap="articleRel">
+		SELECT 
+			<include refid="listColumns"/>
+		FROM tb_article a
+		<include refid="articleJoins"/>
+		<where>
+			<if test="title != null and title != ''">
+			  	a.title LIKE 
+					<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{title},'%')</if>
+			</if>
+			<if test="type != null and type != '' ">
+				AND a.type_id = #{type.key}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="contentType != null and contentType !=''">
+				AND a.content_type = #{contentType}
+			</if>
+			<if test="twoLevel != null and twoLevel !=''">
+				AND a.two_level = #{twoLevel}
+			</if>
+			<if test="issuer != null">
+				AND a.issuer_id = #{issuer.id}
+			</if>
+			<if test="multiStatus != null and multiStatus != ''">
+				AND a.status in ${multiStatus}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.issued_date DESC, a.sort DESC
+			</otherwise>
+		</choose>
+	</select>
+	<!-- app分页查询新闻 -->
+	<select id="appFindPage" resultMap="articleRel">
+		SELECT 
+			<include refid="listColumns"/>
+		FROM tb_article a
+		<include refid="articleJoins"/>
+		<where>
+			<if test="title != null and title != ''">
+			  	a.title LIKE 
+					<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{title},'%')</if>
+			</if>
+			<if test="type != null and type != '' and type.key != 'topLine'.toString() ">
+				AND a.type_id = #{type.key}
+			</if>
+			<if test="type.key == 'topLine'.toString() ">
+				AND a.is_topline ='1'
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="contentType != null and contentType !=''">
+				AND a.content_type = #{contentType}
+			</if>
+			<if test="twoLevel != null and twoLevel !=''">
+				AND a.two_level = #{twoLevel}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.issued_date DESC, a.sort DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<!-- apptisco分页查询新闻 -->
+	<select id="appTiscoFindPage" resultMap="articleRel">
+		SELECT 
+			<include refid="listColumns"/>
+		FROM tb_article a
+		<include refid="articleJoins"/>
+		<where>
+			<if test="title != null and title != ''">
+			  	a.title LIKE 
+					<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{title},'%')</if>
+			</if>
+			<if test="type != null and type != '' and type.key != 'topLine'.toString() ">
+				AND a.type_id = #{type.key}  AND ( a.content_type = '' or a.content_type is null)
+			</if>
+			<if test="type.key == 'topLine'.toString() and toplineFocus != 'focus'.toString()">
+				AND a.is_topline ='1' and ( a.topline_focus = '' or a.topline_focus is null)
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="twoLevel != null and twoLevel !=''">
+				AND a.two_level = #{twoLevel}
+			</if>
+			<!-- 
+			<if test="contentType != 'focus'.toString()">
+				AND ( a.content_type = '' or a.content_type is null)
+			</if>
+			 -->
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.issued_date DESC, a.sort DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<select id="appTiscoFocusList" resultMap="articleRel">
+		SELECT 
+			<include refid="listColumns"/>
+		FROM tb_article a
+		<include refid="articleJoins"/>
+		<where>
+			<if test="title != null and title != ''">
+			  	a.title LIKE 
+					<if test="dbName == 'oracle'">'%'||#{title}||'%'</if>
+					<if test="dbName == 'mssql'">'%'+#{title}+'%'</if>
+					<if test="dbName == 'mysql'">concat('%',#{title},'%')</if>
+			</if>
+			<if test="type != null and type != '' and type.key != 'topLine'.toString() ">
+				AND a.type_id = #{type.key}
+			</if>
+			<if test="type.key == 'topLine'.toString() ">
+				AND a.is_topline ='1' and a.topline_focus = 'focus'
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			<if test="twoLevel != null and twoLevel !=''">
+				AND a.two_level = #{twoLevel}
+			</if>
+			<if test="type.key != 'topLine'.toString() ">
+			    AND a.content_type = 'focus'
+			</if>
+		</where>
+		<choose>
+			<otherwise>
+				ORDER BY a.issued_date DESC, a.sort DESC
+			</otherwise>
+		</choose>
+		limit 0,5
+	</select>
+	
+	<!-- 查询推荐新闻列表 -->
+	<select id="recommendNews" resultType="Article" parameterType="java.util.Map">
+		SELECT 
+			<include refid="articleColumns"/>
+		FROM tb_article a
+		<include refid="articleJoins"/>
+		where 
+		<foreach collection="ids" item="item" index="index" open="(" separator=" or " close=")" > 
+          a.id = #{item}
+        </foreach>
+	</select>
+	
+	
+	
+	<select id="findListByFavorite" resultMap="articleRel">
+		SELECT 
+			<include refid="listColumns"/>
+		FROM tb_article a 
+		<include refid="articleJoins"/>
+		<where>
+			<if test="title != null and title != ''">
+			    a.id in (select d.news_id from tb_favorites d where d.user_id = #{title} and d.del_flag='0')
+			</if>
+		</where>
+		<choose>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Article" >
+		SELECT 
+			<include refid="articleColumns"/>
+		FROM tb_article a
+		<include refid="articleJoins"/>
+		<where>
+			
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO tb_article (
+			id,
+			title,
+			type_id,
+			issuer_id,
+			origin,
+			summary,
+			content,
+			content_type,
+			is_recommend,
+			status,
+			create_date,
+			create_by,
+			issued_date,
+			is_topline,
+			sort,
+			two_level,
+			pic_id,
+			video_id,
+			audio_id,
+			author,
+			enable_comments_or_not,
+			is_push_msg,
+			topline_focus,
+			recommend_news
+		) VALUES (
+			#{id},
+			#{title},
+			#{type.id},
+			#{issuer.id},
+			#{origin},
+			#{summary},
+			#{content},
+			#{contentType},
+			#{isRecommend},
+			#{status},
+			#{createDate},
+			#{createBy.id},
+			#{issuedDate},
+			#{isTopline},
+			#{sort},
+			#{twoLevel},
+			#{picId},
+			#{videoId},
+			#{audioId},
+			#{author},
+			#{enableCommentsOrNot},
+			#{isPushMsg},
+			#{toplineFocus},
+			#{recommendNews}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE tb_article SET 	
+			title = #{title},
+			origin = #{origin},
+			summary = #{summary},
+			content = #{content},
+			content_type= #{contentType},
+			is_recommend = #{isRecommend},
+			status = #{status},
+			issuer_id = #{issuer.id},
+			type_id = #{type.id},
+			update_date = #{updateDate},
+			issued_date = #{issuedDate},
+			enable_comments_or_not = #{enableCommentsOrNot},
+			is_push_msg = #{isPushMsg},
+			topline_focus= #{toplineFocus},
+			recommend_news= #{recommendNews},
+			is_topline =#{isTopline},
+			sort = #{sort},
+			two_level = #{twoLevel},
+			pic_id = #{picId},
+			video_id = #{videoId},
+			audio_id = #{audioId},
+			author = #{author}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="updateArticleContentType">
+		UPDATE tb_article 
+		SET
+			content_type = #{contentType}
+		WHERE id = #{id}
+	</update>
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM tb_article
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE tb_article SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	<select id="getReadingAmount" resultType="Integer" >
+		SELECT 
+			amount
+		FROM 
+			tb_news_reading_amount 
+		WHERE 
+			news_id = #{newsId}
+	</select>
+	
+	
+	<insert id="insertOne">
+		INSERT INTO tb_news_reading_amount (
+			news_id,
+			amount
+		) VALUES (
+			#{newsId},
+			#{amount}
+		)
+	</insert>
+	
+	<update id="updateReadingAmount">
+		UPDATE tb_news_reading_amount 
+		SET 	
+			amount = amount + 1
+		WHERE 
+			news_id = #{newsId}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="deleteReadingAmount">
+		DELETE FROM tb_news_reading_amount
+		WHERE 
+			news_id = #{newsId}
+	</update>
+	
+	<update id="updateArticleStatus">
+		UPDATE tb_article
+		SET
+			status = #{status}
+		WHERE
+			id = #{id}
+	</update>
+</mapper>

@@ -1,0 +1,82 @@
+﻿/*总体*/
+body {
+    margin: 0px;
+    font-family: "microsoft yahei", Arial, Helvetica;
+    font-size: 13px;
+    overflow-y: hidden;
+}
+
+a {
+    text-decoration: none;
+    font-weight: 300;
+    color: white;
+}
+/*顶部蓝色*/
+.header {
+    width: auto;
+    height: 80px;
+    margin: 0px;
+    background: #14a2d4;
+}
+
+.header_logo {
+    width: 500px;
+    height: 50px;
+    margin: 0px;
+    font-size: 60px;
+}
+/*顶部右侧*/
+.header_right {
+    float: right;
+    text-align: right;
+    width: 500px;
+    margin: 0px;
+    font-size: 16px;
+    font-weight: 400;
+    color: white;
+}
+
+.back_table {
+    float: left;
+    font-weight: 400;
+    color: white;
+}
+
+.welcome_message {
+    float: right;
+}
+
+    .welcome_message a {
+        margin: 0px 30px;
+    }
+
+/* 内容 */
+.content {
+    margin: 0px;
+    padding: 5px;
+    width: 100%;
+}
+
+.contentRight {
+    float: right;
+    width: 100%;
+    margin: 0px;
+    padding: 0px;
+}
+
+/* 页面底部 */
+#footer {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    height: 30px;
+    background: #14a2d4;
+    line-height: 30px;
+    text-align: center;
+}
+
+iframe {
+    border: none;
+    width: 100%;
+    height: 99.9%;
+}

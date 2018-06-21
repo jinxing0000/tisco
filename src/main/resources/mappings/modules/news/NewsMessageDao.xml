@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.news.dao.NewsMessageDao">
+    
+	<sql id="newsTypeColumns">
+		a.id AS "id",
+		a.create_date AS "createDate",
+		a.del_flag AS "delFlag",
+		a.news_type AS "newsType",
+		a.title AS "title"
+	</sql>
+	
+	<sql id="newsTypeJoins">
+	</sql>
+	
+    
+	<select id="get" resultType="NewsMessage" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_type a
+		<include refid="newsTypeJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="NewsMessage" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_message a
+		<include refid="newsTypeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+		</choose>
+	</select>
+	
+	<!-- 发布文章是 -->
+	<select id="findListForArticle" resultType="NewsMessage" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_message a
+		<include refid="newsTypeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="NewsMessage" >
+		SELECT 
+			<include refid="newsTypeColumns"/>
+		FROM tb_news_message a
+		<include refid="newsTypeJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO tb_news_message(
+			id,
+			create_date,
+			news_id,
+			del_flag,
+			title,
+			news_type
+		) VALUES (
+			#{id},
+			#{createDate},
+			#{newsId},
+			#{delFlag},
+			#{title},
+			#{newsType}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE tb_news_message SET 	
+			remarks = #{remarks},
+			name = #{name},
+			sort = #{sort}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM tb_news_message
+		WHERE id = #{id}
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE tb_news_message SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="NewsType" statementType="STATEMENT">
+		select * FROM tb_news_message  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.apk.dao.ApkDao">
+    <!-- 查询SQL片段 -->
+    <sql id="columns" >
+    	id as id,
+    	apk_name as apkName,
+    	apk_version as apkVersion,
+    	apk_path as apkPath,
+    	apk_message as apkMessage,
+    	upload_user_id as uploadUserId,
+    	upload_time as uploadTime,
+    	apk_version_code as apkVersionCode
+    </sql>
+    <!-- 查询apk -->
+    <select id="findApk" resultType="com.tisco.modules.apk.entity.Apk">
+        select 
+           <include refid="columns"/>
+        from tb_apk a
+        order by a.upload_time desc
+        limit 0,1
+    </select>
+    
+    <sql id="apkJoins">
+	</sql>
+    
+    <!-- 分页查询-->
+    <select id="findList" resultType="com.tisco.modules.apk.entity.Apk" >
+		SELECT 
+			<include refid="columns"/>
+		FROM tb_apk a
+		<include refid="apkJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select> 
+    <!-- 新增app版本信息 -->
+    <insert id="insert">
+		INSERT INTO tb_apk(
+			id,
+			apk_name,
+			apk_version,
+			apk_path,
+			apk_message,
+			upload_time,
+			upload_user_id,
+			del_flag,
+			apk_version_code
+		) VALUES (
+			#{id},
+			#{apkName},
+			#{apkVersion},
+			#{apkPath},
+			#{apkMessage},
+			#{uploadTime},
+			#{uploadUserId},
+			#{delFlag},
+			#{apkVersionCode}
+		)
+	</insert>
+	<!-- 逻辑删除数据 -->
+	<update id="deleteByLogic">
+		UPDATE tb_apk SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	<!-- 按照ID查询实体 -->
+	<select id="get" resultType="com.tisco.modules.apk.entity.Apk" >
+		SELECT 
+			<include refid="columns"/>
+		FROM tb_apk a
+		<include refid="apkJoins"/>
+		WHERE a.id = #{id}
+	</select>
+    
+</mapper>

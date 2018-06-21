@@ -1,0 +1,6 @@
+﻿.table{border-collapse: collapse; border: 1px solid #ccc;font-size:12px;}
+.table td,.table th{border: 1px solid #ccc; padding: 2px 8px;text-align:center;}
+.table th{background-color:#eee;}
+.table tr td a{color:#333;}
+.table tr td a:hover{color:#F00;}
+.table tr th span{font-weight:normal;color:#777;}

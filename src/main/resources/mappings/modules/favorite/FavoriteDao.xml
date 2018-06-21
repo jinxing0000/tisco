@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.favorite.dao.FavoriteDao">
+    
+	<sql id="favoriteColumns">
+		a.id AS "id",
+		a.create_date AS "createDate",
+		a.update_date AS "updateDate",
+		a.user_id AS "holder.id",
+		a.news_id AS "newsId",
+		a.news_url AS "newsUrl",
+		a.nick_name as "nickName"
+	</sql>
+	
+	<sql id="favoriteJoins">
+	</sql>
+	
+	
+	<sql id="favColumns">
+		a.id as "id",
+		a.create_date as "createDate",
+		a.user_id as "holder.id",
+		a.news_id as "newsId",
+		a.news_url as "newsUrl",
+		user.name as "holder.name",
+		news.id as "article.id",
+		news.title as "article.title",
+		news.type_id as "article.type.key"
+	</sql>
+	
+	<sql id="favJoins">
+		LEFT JOIN tb_article news ON news.id = a.news_id
+		LEFT JOIN sys_user user ON user.id = a.user_id
+	</sql>
+    
+	<select id="get" resultType="Favorite" >
+		SELECT 
+			<include refid="favoriteColumns"/>
+		FROM tb_favorites a
+		<include refid="favoriteJoins"/>
+		WHERE a.id = #{id}
+		<if test="holder != null">
+			AND a.user_id = #{holder.id}
+		</if>
+		<if test="newsId != null and newsId != ''">
+			AND a.news_id = #{newsId}
+		</if>
+	</select>
+	
+	<select id="find" resultType="Favorite" >
+		SELECT 
+			<include refid="favoriteColumns"/>
+		FROM tb_favorites a
+		<include refid="favoriteJoins"/>
+		WHERE 
+			a.user_id = #{holder.id}
+			AND 
+			a.news_id = #{newsId}
+	</select>
+	
+	<select id="findByNewId" resultType="Favorite" >
+		SELECT 
+			<include refid="favoriteColumns"/>
+		FROM tb_favorites a
+		<include refid="favoriteJoins"/>
+		WHERE 
+			a.user_id = #{holder.id}
+			AND 
+			a.news_id = #{newsId}
+			and
+			a.del_flag = '0'
+	</select>
+	<select id="findList" resultType="Favorite" >
+		SELECT 
+			<include refid="favColumns"/>
+		FROM tb_favorites a
+		<include refid="favJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="holder != null">
+				AND a.user_id = #{holder.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+		</choose>
+	</select>
+	
+	<resultMap id="favoriteRel" type="Favorite">
+		<id property="id" column="id" />
+		<result property="newsId" column="news.id"/>
+        <!-- 查询子模块--> 
+        <collection property="article.fileUploads" ofType="FileUpload" 
+        	javaType="ArrayList" column="newsId" select="getFileUploads" />  
+	</resultMap>
+	
+	<select id="getFileUploads" resultType="com.tisco.modules.fileupload.entity.FileUpload"
+		parameterType="String">
+		select b.id, b.path,b.sort as "sort",b.name,b.type,b.when_long from fileupload b where b.policyinfoid=#{newsId}  order by b.sort desc
+	</select>
+	
+	<!-- app查询收藏新闻列表 resultType -->
+	<select id="appFindPage" resultMap="favoriteRel" >
+		SELECT 
+			<include refid="favColumns"/>
+		FROM tb_favorites a
+		<include refid="favJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="holder != null">
+				AND a.user_id = #{holder.id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Favorite" >
+		SELECT 
+			<include refid="favoriteColumns"/>
+		FROM tb_favorites a
+		<include refid="favoriteJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO tb_favorites(
+			id,
+			create_date,
+			update_date,
+			remarks,
+			del_flag,
+			user_id,
+			news_id,
+			news_url,
+			nick_name
+		) VALUES (
+			#{id},
+			#{createDate},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{holder.id},
+			#{newsId},
+			#{newsUrl},
+			#{nickName}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE tb_favorites SET 	
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			user_id = #{holder.id},
+			news_id = #{newsId},
+			news_url = #{newsUrl}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM tb_favorites
+		WHERE
+			user_id = #{holder.id}
+			<if test="newsId != null and newsId !=''">
+				AND news_id = #{newsId}
+			</if>
+	</update>
+	
+	<!--逻辑删除-->
+	<update id="deleteByLogic">
+		UPDATE tb_favorites SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="Favorite" statementType="STATEMENT">
+		select * FROM tb_favorites  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tisco.modules.news.dao.AuditCommentDao">
+    
+	<sql id="commentColumns">
+		a.id AS "id",
+		a.cms_id AS "cmsId",
+		a.auditor_id AS "auditor.id",
+		a.audited_time AS "auditedTime",
+		a.result AS "result",
+		a.comments AS "comments",
+		u.name AS "auditor.name"
+	</sql>
+	
+	<sql id="commentJoins">
+		LEFT JOIN sys_user u ON u.id = a.auditor_id
+	</sql>
+	
+    
+	<select id="get" resultType="AuditComment" >
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_audit_comment a
+		<include refid="commentJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="AuditComment">
+		SELECT 
+			<include refid="commentColumns"/>
+		FROM tb_audit_comment a
+		<include refid="commentJoins"/>
+		<where>
+			a.cms_id = #{cmsId}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO tb_audit_comment(
+			id,
+			audited_time,
+			auditor_id,
+			result,
+			comments,
+			cms_id
+		) VALUES (
+			#{id},
+			#{auditedTime},
+			#{auditor.id},
+			#{result},
+			#{comments},
+			#{cmsId}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE tb_audit_comment SET 	
+			audited_time = #{auditedTime},
+			auditor_id = #{auditor.id},
+			comments = #{comments},
+			result = #{result}
+		WHERE id = #{id}
+	</update>
+	
+	
+	<!--物理删除-->
+	<update id="delete">
+		DELETE FROM tb_audit_comment
+		WHERE id = #{id}
+	</update>
+	
+	
+	
+	<!-- 根据实体名称和字段名称和字段值获取唯一记录 -->
+	<select id="findUniqueByProperty" resultType="AuditComment" statementType="STATEMENT">
+		select * FROM tb_audit_comment  where ${propertyName} = '${value}'
+	</select>
+	
+</mapper>
